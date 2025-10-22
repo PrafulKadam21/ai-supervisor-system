@@ -369,6 +369,7 @@
 
     <script>
         let currentTab = 'pending';
+        let activeFormId = null; // Track which form is being filled
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -376,13 +377,26 @@
             loadPendingRequests();
             setInterval(loadStats, 10000); // Refresh stats every 10s
             setInterval(() => {
-                if (currentTab === 'pending') loadPendingRequests();
+                // Only refresh if no form is being actively edited
+                if (currentTab === 'pending' && !activeFormId) {
+                    loadPendingRequests();
+                }
             }, 5000); // Refresh pending every 5s
         });
+
+        // Track when user is typing in a form
+        function markFormActive(requestId) {
+            activeFormId = requestId;
+        }
+
+        function markFormInactive() {
+            activeFormId = null;
+        }
 
         // Tab switching
         function switchTab(tab) {
             currentTab = tab;
+            activeFormId = null; // Reset active form when switching tabs
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
@@ -484,11 +498,20 @@
                     <form onsubmit="submitAnswer(event, '${req.id}')">
                         <div class="form-group">
                             <label for="supervisor-name-${req.id}">Your Name</label>
-                            <input type="text" id="supervisor-name-${req.id}" placeholder="Enter your name" required>
+                            <input type="text" 
+                                   id="supervisor-name-${req.id}" 
+                                   placeholder="Enter your name" 
+                                   onfocus="markFormActive('${req.id}')"
+                                   onblur="markFormInactive()"
+                                   required>
                         </div>
                         <div class="form-group">
                             <label for="answer-${req.id}">Answer *</label>
-                            <textarea id="answer-${req.id}" placeholder="Provide the answer to help the AI learn..." required></textarea>
+                            <textarea id="answer-${req.id}" 
+                                      placeholder="Provide the answer to help the AI learn..." 
+                                      onfocus="markFormActive('${req.id}')"
+                                      onblur="markFormInactive()"
+                                      required></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">Submit Answer</button>
                     </form>
