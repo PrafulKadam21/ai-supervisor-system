@@ -56,7 +56,7 @@ This system enables an AI agent to:
 ### 1. Clone and Install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/PrafulKadam21/ai-supervisor-system.git
 cd frontdesk-ai-supervisor
 pip install -r requirements.txt
 ```
