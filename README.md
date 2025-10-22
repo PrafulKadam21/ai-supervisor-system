@@ -546,7 +546,7 @@ For setup help:
 ### 1. Clone and Install Dependencies
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/PrafulKadam21/ai-supervisor-system.git
 cd frontdesk-ai-supervisor
 pip install -r requirements.txt
 ```
@@ -892,5 +892,3 @@ For issues or questions:
 4. Check Firestore database rules
 
 ---
-
-**Built with ❤️ for Frontdesk Engineering Assessment**
