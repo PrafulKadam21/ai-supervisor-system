@@ -1,6 +1,6 @@
-# Quick Start Guide - 15 Minutes to Running System
+# Quick Start Guide - 10 Minutes to Running System
 
-This guide will get you from zero to a working system in about 15 minutes.
+Get from zero to a fully working AI supervisor system in about 10 minutes.
 
 ## ⚡ Super Quick Setup (5 minutes)
 
@@ -36,16 +36,16 @@ Create `.env` file in project root:
 GROQ_API_KEY=gsk_your_actual_key_here
 FIREBASE_CREDENTIALS_PATH=./firebase_config.json
 
-# Optional (for LiveKit later)
-LIVEKIT_URL=wss://placeholder.livekit.cloud
-LIVEKIT_API_KEY=placeholder
-LIVEKIT_API_SECRET=placeholder
-
 # Optional (defaults work fine)
 FLASK_SECRET_KEY=test-secret-key
 SUPERVISOR_PORT=5000
 BUSINESS_NAME=Luxe Hair Salon
 BUSINESS_HOURS=Mon-Sat 9AM-7PM
+
+# LiveKit (optional - only needed for voice calls)
+LIVEKIT_URL=wss://placeholder.livekit.cloud
+LIVEKIT_API_KEY=placeholder
+LIVEKIT_API_SECRET=placeholder
 ```
 
 ### 5. Seed Data and Test (1 minute)
@@ -60,9 +60,9 @@ python main.py test
 
 You should see all green checkmarks! ✅
 
-## 🎮 Running the System (2 ways)
+## 🎮 Running the System
 
-### Option A: Text-Based Testing (Easiest)
+### Method 1: Text-Based Agent (Recommended)
 
 **Terminal 1** - Start Supervisor Dashboard:
 ```bash
@@ -195,7 +195,7 @@ Discuss:
    - `call_logs`
 
 ### Check Stats
-Visit dashboard: http://localhost:5000
+Visit dashboard: http://localhost:5001
 - Pending Requests count
 - Resolved count
 - Learned Answers count

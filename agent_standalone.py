@@ -2,32 +2,40 @@
 Standalone agent runner - Run this directly with: python agent_standalone.py dev
 """
 import asyncio
-import ssl
-import certifi
 import os
 from typing import Optional
 from dotenv import load_dotenv
-from groq import Groq
-from livekit import agents, rtc
-from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
-from livekit.plugins import openai, silero
-from database.firebase_client import FirebaseClient
-from database.models import CallLog
-from agent.knowledge_base import KnowledgeBase
-from agent.prompts import build_system_prompt
-from services.help_request_service import HelpRequestService
-from services.notification_service import NotificationService
 
-# Load environment variables
+# Load environment variables FIRST
 load_dotenv()
 
-ssl_context = ssl.create_default_context(cafile=certifi.where())
+# Configure SSL for macOS
+import certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+
+from groq import Groq
+from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
+from livekit.plugins import deepgram, silero
+
+# Import our custom Groq LLM adapter
+import sys
+sys.path.insert(0, os.path.dirname(__file__))
+from groq_llm_adapter import GroqLLM
 
 
 async def entrypoint(ctx: JobContext):
-    """Main entry point for LiveKit agent"""
+    """Main entry point for LiveKit agent - Initialize everything HERE to avoid pickle errors"""
     
-    # Initialize services HERE, not at module level
+    # Import here to avoid pickle issues
+    from database.firebase_client import FirebaseClient
+    from database.models import CallLog
+    from agent.knowledge_base import KnowledgeBase
+    from agent.prompts import build_system_prompt
+    from services.help_request_service import HelpRequestService
+    from services.notification_service import NotificationService
+    
+    # Initialize services INSIDE the entrypoint (after fork/spawn)
     groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     firebase_client = FirebaseClient()
     knowledge_base = KnowledgeBase(firebase_client)
@@ -55,7 +63,7 @@ async def entrypoint(ctx: JobContext):
     
     # Create call log
     caller_id = participant.identity or "unknown"
-    current_caller_phone = f"+1-555-{caller_id[-7:]}"  # Simulated phone
+    current_caller_phone = f"+1-555-{caller_id[-7:]}"
     
     call_log = CallLog(
         caller_id=caller_id,
@@ -69,17 +77,6 @@ async def entrypoint(ctx: JobContext):
     # Build system prompt with knowledge
     knowledge_context = knowledge_base.get_context_for_prompt()
     system_instructions = build_system_prompt(knowledge_context)
-    
-    # Create agent session
-    session = AgentSession(
-        stt=openai.STT(),
-        llm=openai.LLM(model="gpt-4o-mini"),
-        tts=openai.TTS(),
-        vad=silero.VAD.load(),
-    )
-    
-    # Create agent with instructions
-    agent = Agent(instructions=system_instructions)
     
     # Helper function for escalation check
     async def check_for_escalation(user_message: str):
@@ -147,10 +144,29 @@ One word answer:"""
         except Exception as e:
             print(f"Error checking for escalation: {e}")
     
-    # Set up event handlers
+    # Create agent with instructions (new API in LiveKit 1.2)
+    agent = Agent(
+        instructions=system_instructions,
+    )
+    
+    # Create agent session with 100% FREE providers!
+    session = AgentSession(
+        vad=silero.VAD.load(),           # FREE - Voice activity detection
+        stt=deepgram.STT(),              # FREE - Speech to text ($200 credits)
+        llm=GroqLLM(                     # FREE - Groq LLM (unlimited!)
+            model="llama-3.3-70b-versatile",
+            temperature=0.7
+        ),
+        tts=deepgram.TTS(),              # FREE - Text to speech ($200 credits)
+    )
+    
+    # Event handlers for tracking conversation (must be sync!)
     @session.on("user_speech_committed")
-    async def on_user_speech(event):
-        message = event.get("message", "")
+    def on_user_speech(event):
+        message = event.get("content", "")
+        if not message:
+            return
+            
         conversation_history.append({"role": "user", "content": message})
         print(f"👤 Caller: {message}")
         
@@ -161,28 +177,34 @@ One word answer:"""
             print(f"✅ Found answer in knowledge base: {knowledge_match.question}")
             return
         
-        # Check if we need to escalate
-        await check_for_escalation(message)
+        # Check if we need to escalate (run in background)
+        asyncio.create_task(check_for_escalation(message))
     
     @session.on("agent_speech_committed")
-    async def on_agent_speech(event):
-        message = event.get("message", "")
+    def on_agent_speech(event):
+        message = event.get("content", "")
+        if not message:
+            return
+            
         conversation_history.append({"role": "assistant", "content": message})
         print(f"🤖 Agent: {message}")
     
-    # Start the session
-    await session.start(room=ctx.room, agent=agent)
+    # Start the session with agent and room
+    await session.start(agent=agent, room=ctx.room)
     
     # Generate initial greeting
     await session.generate_reply(
         instructions="Greet the caller warmly and ask how you can help them today."
     )
+    
+    print("\n✅ Voice assistant started and ready!")
+    print("Listening for participant speech...\n")
 
 
 if __name__ == "__main__":
     # Run with LiveKit CLI
     cli.run_app(
         WorkerOptions(
-            entrypoint_fnc=entrypoint,  # Pass the function directly
+            entrypoint_fnc=entrypoint,
         )
     )
