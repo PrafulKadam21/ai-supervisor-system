@@ -3,7 +3,7 @@ Custom Groq LLM adapter for LiveKit Agents
 This allows using Groq's FREE LLM API with LiveKit
 """
 import os
-from typing import List, Any
+from typing import Optional
 from groq import AsyncGroq
 from livekit.agents import llm
 
@@ -15,7 +15,7 @@ class GroqLLM(llm.LLM):
         self,
         *,
         model: str = "llama-3.3-70b-versatile",
-        api_key: str | None = None,
+        api_key: Optional[str] = None,
         temperature: float = 0.7,
     ):
         super().__init__()
@@ -31,15 +31,18 @@ class GroqLLM(llm.LLM):
         self,
         *,
         chat_ctx: llm.ChatContext,
+        conn_options: Optional[llm.ChatConnOptions] = None,
         **kwargs
     ) -> "LLMStream":
         """Generate chat completion using Groq"""
+        conn_options = conn_options or llm.ChatConnOptions()
         return LLMStream(
             groq_llm=self,
             client=self._client,
             model=self._model,
             chat_ctx=chat_ctx,
             temperature=kwargs.get("temperature", self._temperature),
+            conn_options=conn_options,
         )
 
 
@@ -54,23 +57,13 @@ class LLMStream(llm.LLMStream):
         model: str,
         chat_ctx: llm.ChatContext,
         temperature: float,
+        conn_options: llm.ChatConnOptions,
     ):
-        # Try to initialize with the parameters that work
-        try:
-            # Try newer API first
-            super().__init__(
-                llm=groq_llm,
-                chat_ctx=chat_ctx,
-                tools=[],
-                conn_options={},  # Use dict instead of class
-            )
-        except TypeError:
-            # Fallback to simpler initialization
-            super().__init__(
-                llm=groq_llm,
-                chat_ctx=chat_ctx,
-            )
-        
+        super().__init__(
+            llm=groq_llm,
+            chat_ctx=chat_ctx,
+            conn_options=conn_options,
+        )
         self._client = client
         self._model = model
         self._temperature = temperature
@@ -99,7 +92,7 @@ class LLMStream(llm.LLMStream):
                 if chunk.choices and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     
-                    # Send content chunks using the correct method
+                    # Send content chunks
                     self._event_ch.send_nowait(
                         llm.ChatChunk(
                             choices=[
@@ -114,6 +107,5 @@ class LLMStream(llm.LLMStream):
                     )
         
         except Exception as e:
-            # Log error and re-raise
             print(f"Groq API error: {e}")
             raise

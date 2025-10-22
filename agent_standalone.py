@@ -16,12 +16,12 @@ os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
 
 from groq import Groq
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
-from livekit.plugins import deepgram, silero
+from livekit.plugins import openai, deepgram, silero
 
 # Import our custom Groq LLM adapter
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
-from groq_llm_adapter import GroqLLM
+
 
 
 async def entrypoint(ctx: JobContext):
@@ -151,14 +151,11 @@ One word answer:"""
     
     # Create agent session with 100% FREE providers!
     session = AgentSession(
-        vad=silero.VAD.load(),           # FREE - Voice activity detection
-        stt=deepgram.STT(),              # FREE - Speech to text ($200 credits)
-        llm=GroqLLM(                     # FREE - Groq LLM (unlimited!)
-            model="llama-3.3-70b-versatile",
-            temperature=0.7
-        ),
-        tts=deepgram.TTS(),              # FREE - Text to speech ($200 credits)
-    )
+    vad=silero.VAD.load(),           # FREE
+    stt=deepgram.STT(),              # FREE ($200 credits)
+    llm=openai.LLM(model="gpt-3.5-turbo"),  # FREE ($5 credits = 1000+ conversations)
+    tts=deepgram.TTS(),              # FREE ($200 credits)
+)
     
     # Event handlers for tracking conversation (must be sync!)
     @session.on("user_speech_committed")
