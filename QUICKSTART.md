@@ -195,7 +195,7 @@ Discuss:
    - `call_logs`
 
 ### Check Stats
-Visit dashboard: http://localhost:5001
+Visit dashboard: http://localhost:5000
 - Pending Requests count
 - Resolved count
 - Learned Answers count
@@ -237,61 +237,3 @@ Directly add to Firebase console for testing:
 ### Monitor in Real-Time
 Keep dashboard open while testing - it auto-refreshes every 5 seconds!
 
-## 📹 Recording Your Demo
-
-### Recommended Setup
-1. Screen size: 1920x1080
-2. Use OBS Studio or QuickTime (free)
-3. Show terminal + browser side by side
-4. Speak clearly, explain as you demo
-5. 8-10 minutes total is perfect
-
-### Demo Script Template
-```
-"Hi, I'm showing the Frontdesk AI Supervisor system.
-
-[Show architecture]
-The system has three main parts: database, services, and interfaces.
-
-[Show code structure]
-I organized it for modularity and scalability.
-
-[Start demo]
-Let me show it working...
-[Run through scenarios]
-
-[Explain decisions]
-I chose Firebase because... 
-For scaling to 10k/day I would...
-
-[Discuss improvements]
-Next I would add...
-
-Thanks for watching!"
-```
-
-## ✅ Pre-Submission Checklist
-
-- [ ] All tests pass (`python main.py test`)
-- [ ] Supervisor dashboard loads
-- [ ] Can create help request
-- [ ] Can resolve help request
-- [ ] Knowledge base updates
-- [ ] Console shows notifications
-- [ ] README.md is complete
-- [ ] Code is commented
-- [ ] `.env.template` exists
-- [ ] Video is recorded
-- [ ] GitHub repo is clean (no secrets!)
-
-## 🎉 You're Ready!
-
-If you got through this guide, you have:
-- ✅ Working database layer
-- ✅ Functional AI agent
-- ✅ Supervisor dashboard
-- ✅ Complete request lifecycle
-- ✅ Learning knowledge base
-- ✅ Clean, modular code
-
-Now record your demo and submit! Good luck! 🚀
